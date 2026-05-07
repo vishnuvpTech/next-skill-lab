@@ -1,0 +1,39 @@
+{% extends 'base_admin.html' %}
+{% block title %}My Courses — TalentLens{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div><div class="section-title">My Courses</div><div class="section-sub">Courses assigned to you</div></div>
+</div>
+
+{% if data %}
+{% for row in data %}
+<div class="link-card" style="margin-bottom:12px;">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;">
+    <div style="flex:1;">
+      <div style="color:var(--bright);font-size:1rem;font-weight:600;margin-bottom:3px;">{{ row.assignment.course.title }}</div>
+      {% if row.assignment.course.description %}<div style="font-size:.82rem;color:var(--muted);">{{ row.assignment.course.description|truncatechars:100 }}</div>{% endif %}
+    </div>
+    <a href="{% url 'my_course_detail' row.assignment.id %}" class="btn btn-teal btn-sm" style="flex-shrink:0;">
+      {% if row.pct == 100 %}Review{% elif row.completed > 0 %}Continue{% else %}Start{% endif %} →
+    </a>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div style="flex:1;height:6px;background:var(--ink3);border-radius:3px;overflow:hidden;">
+      <div style="height:100%;width:{{ row.pct }}%;background:{% if row.pct == 100 %}var(--green){% else %}var(--teal){% endif %};border-radius:3px;transition:width .4s;"></div>
+    </div>
+    <span style="font-size:.78rem;font-family:monospace;color:{% if row.pct == 100 %}var(--green){% elif row.pct > 0 %}var(--teal){% else %}var(--muted){% endif %};flex-shrink:0;">
+      {{ row.completed }}/{{ row.total }} · {{ row.pct }}%
+      {% if row.pct == 100 %} ✓ Complete{% endif %}
+    </span>
+  </div>
+  <div style="margin-top:8px;font-size:.75rem;color:var(--muted);">
+    📎 {{ row.total }} material{{ row.total|pluralize }}
+    · Assigned {{ row.assignment.assigned_at|date:"M d, Y" }}
+    {% if row.assignment.due_date %}· Due <strong style="color:var(--rose);">{{ row.assignment.due_date|date:"M d, Y" }}</strong>{% endif %}
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="empty"><div class="empty-ico">🎓</div><div>No courses assigned to you yet.</div></div>
+{% endif %}
+{% endblock %}

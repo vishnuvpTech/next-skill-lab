@@ -1,0 +1,20 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_DIR=/app/data
+    env_file:
+      - .env
+    volumes:
+      - sqlite_data:/app/data
+      - media_data:/app/media
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             gunicorn talentlens.wsgi:application --bind 0.0.0.0:8000 --workers 2"
+
+volumes:
+  sqlite_data:
+  media_data:

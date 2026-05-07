@@ -1,0 +1,61 @@
+level,question_text,answer
+intermediate,What are decorators in Python?,"Decorators are functions that wrap another function to modify its behavior, applied with the @decorator syntax."
+intermediate,Explain generators and the 'yield' keyword.,"Generators are functions that return an iterator using 'yield', producing values lazily one at a time instead of all at once."
+intermediate,What is the GIL in Python?,The Global Interpreter Lock (GIL) is a mutex that allows only one thread to execute Python bytecode at a time in CPython.
+intermediate,How does Python's garbage collection work?,"Python uses reference counting as the primary mechanism, with a cyclic garbage collector to handle reference cycles."
+intermediate,What are Python's magic/dunder methods?,"Special methods like __init__, __str__, __repr__, __len__ that Python calls implicitly for built-in operations."
+intermediate,Explain the difference between shallow and deep copy.,Shallow copy copies the object structure but references the same nested objects; deep copy recursively copies all nested objects.
+intermediate,What is a metaclass in Python?,"A metaclass is a class of a class; it defines how classes are created and behave, allowing customization of class creation."
+intermediate,What is the difference between multiprocessing and multithreading?,Multithreading shares memory but is limited by GIL; multiprocessing uses separate memory spaces and bypasses the GIL for true parallelism.
+intermediate,What is a context manager and how does 'with' work?,Context managers handle setup/teardown using __enter__ and __exit__ methods; 'with' ensures proper resource management.
+intermediate,What is the difference between classmethod and staticmethod?,@classmethod receives the class (cls) as first arg; @staticmethod receives nothing implicitly — neither self nor cls.
+intermediate,What is property() in Python?,"@property turns a method into a getter, with @setter and @deleter for full descriptor behavior without changing calling syntax."
+intermediate,What are Python's built-in higher-order functions?,"map(), filter(), reduce() (functools), zip(), sorted(), enumerate() — functions that take or return other functions."
+intermediate,What is memoization in Python?,Caching function return values for given inputs; implemented with @functools.lru_cache or @functools.cache in Python 3.9+.
+intermediate,What is the difference between __str__ and __repr__?,"__str__ is human-readable string for end users; __repr__ is unambiguous representation for developers/debugging, ideally eval()-able."
+intermediate,What are Python's abstract base classes?,ABCs (via abc module) define interfaces that subclasses must implement; using @abstractmethod enforces method implementation.
+intermediate,How does Python's import system work?,"Python checks sys.modules cache, searches sys.path for modules, uses finders/loaders, and executes module code in a new namespace."
+intermediate,What is a namedtuple?,"A tuple subclass with named fields: collections.namedtuple('Point', ['x','y']); more readable than plain tuples, still immutable."
+intermediate,What is functools.partial?,"Creates a new function with some arguments pre-filled: partial(func, arg1) returns a callable with arg1 already bound."
+intermediate,How does Python handle multiple inheritance (MRO)?,"Python uses C3 linearization (MRO) to determine method resolution order, accessible via ClassName.__mro__ or mro()."
+intermediate,What is the difference between is and == for None?,Always use 'is None' / 'is not None' because None is a singleton; '==' can be overridden by __eq__ and may behave unexpectedly.
+advanced,Explain Python's descriptor protocol.,"Descriptors define __get__, __set__, __delete__ methods and control attribute access in classes (e.g., properties, classmethods use this)."
+advanced,How does Python's import system work internally?,"Python searches sys.path, uses finders/loaders from sys.meta_path, caches modules in sys.modules, executes module code in a new namespace."
+advanced,What is asyncio and how does the event loop work?,asyncio provides asynchronous I/O using coroutines and an event loop that schedules and runs awaitable objects without blocking.
+advanced,How would you implement a thread-safe singleton in Python?,"Use threading.Lock with double-checked locking, or use module-level instantiation which is inherently thread-safe in CPython."
+advanced,Explain memory management and object internals in CPython.,"CPython uses a private heap, pymalloc for small allocations, reference counting + cyclic GC, and arenas/pools for memory efficiency."
+advanced,What is the difference between __slots__ and __dict__?,"__dict__ stores instance attributes in a dictionary (flexible, higher memory); __slots__ preallocates fixed storage (lower memory, faster)."
+advanced,How do you implement a custom iterator class?,Implement __iter__ (returns self) and __next__ (returns next value or raises StopIteration) in a class.
+advanced,What are coroutines and how do they differ from threads?,Coroutines are cooperative multitasking constructs scheduled by an event loop; threads are OS-scheduled. Coroutines are lighter and avoid race conditions.
+advanced,How does Python's attribute lookup chain work?,"Python checks instance __dict__, then class __dict__, then MRO chain, invoking descriptors (__get__) if found along the way."
+advanced,What is __init_subclass__ used for?,"__init_subclass__ is called whenever the class is subclassed, allowing the parent to customize subclass creation without metaclasses."
+advanced,How do you profile Python code?,"Use cProfile or profile module for CPU profiling, memory_profiler for memory, line_profiler for line-by-line analysis, and tracemalloc."
+advanced,What is the purpose of __all__ in a module?,__all__ defines the public API of a module — only names listed are exported with 'from module import *'.
+advanced,How does Python's contextlib.contextmanager work?,"It wraps a generator function as a context manager; code before yield is __enter__, code after yield is __exit__."
+advanced,What is a weakref in Python?,"A weak reference doesn't increase the object's reference count, allowing garbage collection; useful for caches and circular-reference-prone structures."
+advanced,Explain Python's bytecode and the dis module.,Python compiles source to bytecode (.pyc); dis.dis() shows the CPython bytecode instructions for any function or code object.
+advanced,What is the difference between ProcessPoolExecutor and ThreadPoolExecutor?,"ThreadPoolExecutor uses threads (I/O-bound, limited by GIL); ProcessPoolExecutor uses processes (CPU-bound, true parallelism, higher overhead)."
+advanced,What are structural pattern matching (match/case) features in Python 3.10+?,"match/case enables pattern matching on value, type, sequence, mapping, and class patterns — more powerful than if/elif chains."
+advanced,How do you create a C extension for Python?,"Use the Python C API or Cython; define a PyMethodDef array, module init function, and compile with setuptools as a .so/.pyd extension."
+advanced,What is PEP 8 and why does it matter?,"PEP 8 is Python's style guide covering naming conventions, indentation (4 spaces), line length, imports order — ensuring consistent, readable code."
+advanced,How does async generator differ from a regular generator?,Async generators use 'async def' with 'yield' and must be iterated with 'async for'; they support 'await' expressions inside the body.
+basic,What is Python?,"Python is a high-level, interpreted, general-purpose programming language known for its simple syntax and readability."
+basic,What are Python's built-in data types?,"int, float, complex, str, list, tuple, set, frozenset, dict, bool, bytes, bytearray, NoneType."
+basic,What is the difference between a list and a tuple?,"Lists are mutable (can be changed), tuples are immutable (cannot be changed after creation)."
+basic,How do you define a function in Python?,Using the 'def' keyword: def function_name(parameters): followed by the function body.
+basic,What is a dictionary in Python?,"A dictionary is an unordered collection of key-value pairs, defined with curly braces {key: value}."
+basic,What is list comprehension?,A concise way to create lists: [expression for item in iterable if condition].
+basic,What is the difference between '==' and 'is'?,'==' checks value equality; 'is' checks identity (same object in memory).
+basic,How do you handle exceptions in Python?,Using try-except blocks: try: <code> except ExceptionType as e: <handler>.
+basic,What is a lambda function?,"An anonymous, single-expression function: lambda arguments: expression."
+basic,What does the 'pass' statement do?,It is a null operation; used as a placeholder where code is syntactically required but not yet written.
+basic,How do you open and read a file in Python?,"Using open(): with open('file.txt', 'r') as f: content = f.read(). The 'with' statement ensures the file is closed."
+basic,What is a module in Python?,"A module is a file containing Python code (functions, classes, variables) that can be imported and reused."
+basic,What is the difference between append() and extend()?,append() adds a single element to a list; extend() adds all elements of an iterable to the list.
+basic,What is string formatting in Python?,"Methods: %-formatting, str.format(), and f-strings (f'{variable}'). F-strings are fastest and most readable."
+basic,What is a Python set?,"An unordered collection of unique elements, defined with curly braces {}, supporting union, intersection, difference operations."
+basic,How do you check the type of a variable?,"Using type(variable) to get the type or isinstance(variable, type) to check if it's an instance of a type."
+basic,What is None in Python?,None is Python's null value representing the absence of a value; it is a singleton of the NoneType class.
+basic,What are *args and **kwargs?,*args passes variable positional arguments as a tuple; **kwargs passes variable keyword arguments as a dictionary.
+basic,"What is the difference between break, continue, and pass?",break exits the loop; continue skips to the next iteration; pass is a no-op placeholder statement.
+basic,What is a Python virtual environment?,"An isolated Python environment (venv) with its own packages, preventing conflicts between project dependencies."

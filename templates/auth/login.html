@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Sign In — TalentLens{% endblock %}
+{% block body %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div class="logo" style="justify-content:center;font-size:1.5rem;"><div class="logo-dot"></div> TalentLens</div>
+      <div style="font-size:.82rem;color:var(--muted);margin-top:6px;">Mock Interview Platform</div>
+    </div>
+    <div class="auth-tabs">
+      <span class="auth-tab active">Sign In</span>
+      <a href="{% url 'register' %}" class="auth-tab">Register</a>
+    </div>
+    {% for message in messages %}<div class="alert alert-error">✕ {{ message }}</div>{% endfor %}
+    <form method="post">{% csrf_token %}
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" name="email" placeholder="admin@company.com" required></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" name="password" placeholder="••••••••" required></div>
+      <button type="submit" class="btn btn-teal btn-lg" style="width:100%;justify-content:center;margin-top:4px;">Sign In →</button>
+    </form>
+    <div style="margin-top:14px;font-size:.8rem;color:var(--muted);text-align:center;">Default: <span style="font-family:monospace;color:var(--teal);">superadmin@demo.com</span> / <span style="font-family:monospace;color:var(--teal);">demo123</span></div>
+  </div>
+</div>
+{% endblock %}

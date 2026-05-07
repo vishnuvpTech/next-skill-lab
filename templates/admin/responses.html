@@ -1,0 +1,36 @@
+{% extends 'base_admin.html' %}
+{% block title %}Responses — TalentLens{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div><div class="section-title">Responses</div><div class="section-sub">Review candidate interview submissions</div></div>
+  <form method="get" style="display:flex;gap:8px;">
+    <input class="form-input" style="width:220px;" name="q" placeholder="🔍 Search…" value="{{ search }}">
+    <button type="submit" class="btn btn-ghost btn-sm">Search</button>
+  </form>
+</div>
+{% if responses %}
+{% for r in responses %}
+<a href="{% url 'response_detail' r.id %}" class="resp-card">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <div style="font-weight:600;color:var(--bright);">{{ r.candidate_name }}</div>
+      <div style="font-size:.79rem;color:var(--muted);font-family:monospace;">{{ r.candidate_email }}</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="display:flex;gap:6px;justify-content:flex-end;">
+        <span class="badge badge-dept">{{ r.topic_name }}</span>
+        <span class="badge badge-{{ r.level }}">{{ r.level }}</span>
+      </div>
+      <div style="margin-top:5px;">
+        {% if r.ai_score is not None %}<span style="font-size:.88rem;font-weight:700;color:var(--teal);">{{ r.ai_score }}% AI score</span>
+        {% else %}<span style="font-size:.78rem;color:var(--muted);">Not scored</span>{% endif %}
+        <span style="font-size:.76rem;color:var(--muted);margin-left:8px;">{{ r.submitted_at|date:"M d, Y" }}</span>
+      </div>
+    </div>
+  </div>
+</a>
+{% endfor %}
+{% else %}
+<div class="empty"><div class="empty-ico">📭</div><div>{% if search %}No matching responses.{% else %}No responses yet.{% endif %}</div></div>
+{% endif %}
+{% endblock %}

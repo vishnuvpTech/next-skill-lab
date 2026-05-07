@@ -1,0 +1,138 @@
+{% extends 'base_admin.html' %}
+{% block title %}Interview Links — TalentLens{% endblock %}
+{% block extra_head %}{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div><div class="section-title">Interview Links</div><div class="section-sub">Generate and share interview links with candidates</div></div>
+  {% if request.user.can_edit %}
+  <button class="btn btn-teal" onclick="document.getElementById('gen-link-modal').style.display='flex'">+ Generate Link</button>
+  {% endif %}
+</div>
+{% if links %}
+{% for l in links %}
+<div class="link-card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+    <div>
+      <span class="badge badge-dept">{{ l.dept_name }}</span>
+      <strong style="margin-left:8px;">{{ l.topic_name }}</strong>
+    </div>
+    <div style="display:flex;gap:7px;align-items:center;">
+      <span class="badge badge-{{ l.level }}">{{ l.level }}</span>
+      {% if request.user.can_edit %}
+      <form method="post" action="{% url 'delete_link' l.id %}" onsubmit="return confirm('Delete this link?')" style="display:inline;">
+        {% csrf_token %}<button type="submit" class="btn btn-danger btn-icon btn-sm">✕</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  <code class="link-url" id="url-{{ l.id }}">{{ request.scheme }}://{{ request.get_host }}{% url 'candidate_landing' l.id %}</code>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <div style="display:flex;gap:14px;">
+      <span style="font-size:.79rem;color:var(--muted);font-family:monospace;">📋 {{ l.question_count }} questions</span>
+      <span style="font-size:.79rem;color:var(--muted);font-family:monospace;">⏱ {% if l.time_per_question %}{{ l.time_per_question }}min{% else %}no limit{% endif %}</span>
+      <span style="font-size:.79rem;color:var(--muted);font-family:monospace;">{% if l.mode == 'text' %}⌨️ Text{% else %}🎥 Video{% endif %}</span>
+      <span style="font-size:.79rem;color:var(--muted);font-family:monospace;">👤 {{ l.response_count }} responses</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="copyLink('url-{{ l.id }}', this)">📋 Copy</button>
+      <a href="{% url 'candidate_landing' l.id %}" target="_blank" class="btn btn-violet btn-sm">Open →</a>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="empty"><div class="empty-ico">🔗</div><div>No links yet. Generate one to share with candidates.</div></div>
+{% endif %}
+
+{% if request.user.can_edit %}
+<div id="gen-link-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--ink2);border:1px solid var(--line2);border-radius:var(--r-xl);padding:28px;width:100%;max-width:520px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-family:'Clash Display',sans-serif;font-size:1.1rem;font-weight:600;color:var(--bright);">Generate Interview Link</div>
+      <button onclick="document.getElementById('gen-link-modal').style.display='none'" style="background:var(--ink3);border:1px solid var(--line);color:var(--muted);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <form method="post" action="{% url 'add_link' %}">{% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Department</label>
+        <select class="form-select" id="gl-dept" onchange="loadTopics(this.value)">
+          <option value="">Choose department…</option>
+          {% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Topic</label>
+        <select class="form-select" id="gl-topic" name="topic_id" onchange="updatePreview()"><option value="">Choose topic…</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Level</label>
+          <select class="form-select" name="level" id="gl-level" onchange="updatePreview()">
+            <option value="basic">Basic</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Questions</label>
+          <input class="form-input" type="number" name="question_count" id="gl-count" value="5" min="1" max="20" oninput="updatePreview()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Interview Mode</label>
+        <div style="display:flex;gap:10px;">
+          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--ink3);border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;">
+            <input type="radio" name="mode" value="video" checked style="accent-color:var(--teal);"> 🎥 Video Recording
+          </label>
+          <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--ink3);border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;">
+            <input type="radio" name="mode" value="text" style="accent-color:var(--teal);"> ⌨️ Text Entry
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Time per Question</label>
+        <select class="form-select" name="time_per_question">
+          <option value="2">2 minutes</option><option value="3">3 minutes</option><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="0">No limit</option>
+        </select>
+      </div>
+      <div id="gl-preview" style="font-size:.82rem;color:var(--muted);padding:9px 12px;background:var(--ink3);border-radius:var(--r-sm);margin-bottom:16px;border:1px solid var(--line);">Select a topic to preview.</div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('gen-link-modal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn btn-teal">Generate Link</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script>
+function copyLink(elemId, btn) {
+  const text = document.getElementById(elemId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied!'; btn.style.color = 'var(--teal)';
+    setTimeout(() => { btn.textContent = '📋 Copy'; btn.style.color = ''; }, 2000);
+  });
+}
+function loadTopics(deptId) {
+  const sel = document.getElementById('gl-topic');
+  sel.innerHTML = '<option value="">Loading…</option>';
+  if (!deptId) { sel.innerHTML = '<option value="">Choose topic…</option>'; return; }
+  fetch('/api/topics-for-dept/' + deptId + '/')
+    .then(r => r.json()).then(data => {
+      sel.innerHTML = '<option value="">Choose topic…</option>';
+      data.topics.forEach(t => sel.innerHTML += '<option value="' + t.id + '">' + t.name + '</option>');
+    });
+  updatePreview();
+}
+function updatePreview() {
+  const tid = document.getElementById('gl-topic').value;
+  const level = document.getElementById('gl-level').value;
+  const count = parseInt(document.getElementById('gl-count').value) || 5;
+  const p = document.getElementById('gl-preview');
+  if (!tid) { p.textContent = 'Select a topic to preview.'; return; }
+  fetch('/api/question-count/?topic_id=' + tid + '&level=' + level)
+    .then(r => r.json()).then(data => {
+      const actual = Math.min(count, data.count);
+      p.innerHTML = '<strong style="color:var(--dim)">' + data.count + '</strong> ' + level + ' questions available. Will pick <strong style="color:var(--teal)">' + actual + '</strong> randomly.';
+    });
+}
+</script>
+{% endblock %}

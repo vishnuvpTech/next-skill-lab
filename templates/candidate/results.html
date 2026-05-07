@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Interview Results — TalentLens{% endblock %}
+{% block body %}
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;text-align:center;">
+  <div class="complete-icon">🎉</div>
+  <h1 class="complete-title" style="margin-bottom:8px;">Interview Complete!</h1>
+  <p style="color:var(--muted);max-width:480px;margin-bottom:8px;">Your responses have been recorded and reviewed by our AI. Here is your performance breakdown.</p>
+  <div class="score-card">
+    {% if pct is not None %}
+    <div class="score-overall">
+      <div>
+        <div style="font-size:.8rem;color:var(--muted);font-family:monospace;margin-bottom:4px;">OVERALL SCORE</div>
+        <div class="score-big" style="color:{{ grade_color }}">{{ pct }}<span style="font-size:1.5rem;color:var(--muted);">%</span></div>
+      </div>
+      <div style="text-align:center;">
+        <div class="score-grade" style="color:{{ grade_color }}">{{ grade }}</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:5px;">{{ total_pts }}/{{ max_pts }} pts</div>
+      </div>
+    </div>
+    {% else %}
+    <div style="margin-bottom:20px;padding:14px;background:var(--ink3);border-radius:var(--r-sm);font-size:.85rem;color:var(--muted);">AI scoring unavailable — your responses have been saved for manual review.</div>
+    {% endif %}
+    {% for a in answers %}
+    <div class="score-item">
+      <div style="flex:1;">
+        <div style="margin-bottom:4px;color:var(--text);font-size:.88rem;text-align:left;">{{ a.question_text }}</div>
+        {% if a.ai_feedback %}<div class="ai-feedback">💡 {{ a.ai_feedback }}</div>{% endif %}
+        {% if a.ai_score is not None %}
+        <div class="score-bar-wrap"><div class="score-bar-fill" style="width:{{ a.ai_score|floatformat:0 }}0%;background:{% if a.ai_score >= 7 %}var(--teal){% elif a.ai_score >= 5 %}var(--amber){% else %}var(--rose){% endif %};"></div></div>
+        {% endif %}
+      </div>
+      {% if a.ai_score is not None %}
+      <div style="font-family:monospace;font-size:.9rem;font-weight:700;min-width:40px;text-align:right;color:{% if a.ai_score >= 7 %}var(--teal){% elif a.ai_score >= 5 %}var(--amber){% else %}var(--rose){% endif %};">{{ a.ai_score|floatformat:1 }}/10</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    <div style="margin-top:16px;font-size:.8rem;color:var(--muted);text-align:center;padding-top:14px;border-top:1px solid var(--line);">
+      Results shared with <strong style="color:var(--dim);">{{ resp.dept_name }}</strong> for review.
+    </div>
+  </div>
+</div>
+{% endblock %}

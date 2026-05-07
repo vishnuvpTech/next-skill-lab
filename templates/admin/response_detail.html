@@ -1,0 +1,47 @@
+{% extends 'base_admin.html' %}
+{% block title %}{{ response.candidate_name }} — TalentLens{% endblock %}
+{% block content %}
+<div class="bc">
+  <a href="{% url 'responses' %}" class="bc-item">Responses</a>
+  <span class="bc-sep">›</span>
+  <span class="bc-curr">{{ response.candidate_name }}</span>
+</div>
+<div class="section-header">
+  <div>
+    <div class="section-title">{{ response.candidate_name }}</div>
+    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+      <span class="badge badge-dept">{{ response.dept_name }}</span>
+      <span class="badge badge-{{ response.level }}">{{ response.level }}</span>
+      <span style="font-size:.82rem;color:var(--muted);font-family:monospace;">{{ response.candidate_email }}</span>
+      <span style="font-size:.82rem;color:var(--muted);">{{ response.submitted_at|date:"M d, Y H:i" }}</span>
+    </div>
+  </div>
+</div>
+{% if response.ai_score is not None %}
+<div style="background:rgba(0,212,170,.07);border:1px solid rgba(0,212,170,.2);border-radius:var(--r);padding:14px 18px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
+  <div style="font-size:.85rem;color:var(--muted);">AI Overall Score</div>
+  <div style="font-family:'Clash Display',sans-serif;font-size:1.8rem;font-weight:700;color:var(--teal);">{{ response.ai_score }}%</div>
+</div>
+{% endif %}
+{% for a in response.answers.all %}
+<div style="margin-bottom:12px;background:var(--ink2);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;">
+  <div style="font-weight:600;font-size:.95rem;margin-bottom:10px;color:var(--bright);">Q{{ forloop.counter }}. {{ a.question_text }}</div>
+  {% if a.is_recorded and a.video_recording %}
+  <div style="margin-bottom:8px;">
+    <div style="font-size:.75rem;color:var(--muted);font-family:monospace;margin-bottom:6px;">VIDEO RESPONSE</div>
+    <video controls src="{{ a.video_recording.url }}" style="width:100%;border-radius:var(--r-sm);background:#000;max-height:220px;"></video>
+  </div>
+  {% else %}
+  <div style="background:var(--ink3);border-left:3px solid var(--teal);padding:10px 14px;border-radius:0 var(--r-sm) var(--r-sm) 0;font-size:.88rem;line-height:1.55;color:var(--dim);">
+    {% if a.text_answer %}{{ a.text_answer }}{% else %}<em style="color:var(--muted);">No response provided</em>{% endif %}
+  </div>
+  {% endif %}
+  {% if a.ai_feedback %}
+  <div style="margin-top:8px;font-size:.82rem;color:var(--muted);font-style:italic;">💡 {{ a.ai_feedback }}</div>
+  {% endif %}
+  {% if a.ai_score is not None %}
+  <div style="margin-top:8px;font-size:.8rem;font-family:monospace;color:var(--teal);">Score: {{ a.ai_score }}/10</div>
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'base_admin.html' %}
+{% block title %}{{ assignment.course.title }} — TalentLens{% endblock %}
+{% block content %}
+<div class="bc">
+  <a href="{% url 'my_courses' %}" class="bc-item">My Courses</a>
+  <span class="bc-sep">›</span>
+  <span class="bc-curr">{{ assignment.course.title }}</span>
+</div>
+<div class="section-header">
+  <div>
+    <div class="section-title">{{ assignment.course.title }}</div>
+    {% if assignment.course.description %}<div class="section-sub">{{ assignment.course.description }}</div>{% endif %}
+  </div>
+</div>
+
+<!-- Progress bar -->
+<div style="background:var(--ink2);border:1px solid var(--line);border-radius:var(--r);padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:16px;">
+  <div style="flex:1;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+      <span style="font-size:.82rem;color:var(--muted);">Overall Progress</span>
+      <span style="font-size:.82rem;font-family:monospace;color:{% if pct == 100 %}var(--green){% else %}var(--teal){% endif %};">
+        {{ completed_count }}/{{ total }} materials · {{ pct }}%{% if pct == 100 %} ✓ Complete{% endif %}
+      </span>
+    </div>
+    <div style="height:8px;background:var(--ink3);border-radius:4px;overflow:hidden;">
+      <div style="height:100%;width:{{ pct }}%;background:{% if pct == 100 %}var(--green){% else %}var(--teal){% endif %};border-radius:4px;transition:width .4s;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Materials list -->
+{% for item in items %}
+<a href="{% url 'view_material' assignment.id item.material.id %}"
+   style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--ink2);border:1px solid {% if item.completed %}var(--teal){% else %}var(--line){% endif %};border-radius:var(--r);margin-bottom:8px;text-decoration:none;transition:border-color .2s;">
+  <div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+       background:{% if item.completed %}var(--teal){% else %}var(--ink3){% endif %};
+       border:2px solid {% if item.completed %}var(--teal){% else %}var(--line2){% endif %};">
+    {% if item.completed %}
+    <span style="font-size:.85rem;color:#000;">✓</span>
+    {% else %}
+    <span style="font-size:.9rem;">{{ item.material.type_icon }}</span>
+    {% endif %}
+  </div>
+  <div style="flex:1;min-width:0;">
+    <div style="color:var(--bright);font-size:.9rem;font-weight:{% if item.completed %}400{% else %}500{% endif %};">{{ item.material.title }}</div>
+    <div style="font-size:.75rem;color:var(--muted);">{{ item.material.get_material_type_display }}</div>
+  </div>
+  <span style="font-size:.75rem;color:{% if item.completed %}var(--teal){% else %}var(--muted){% endif %};flex-shrink:0;">
+    {% if item.completed %}Done{% else %}Open →{% endif %}
+  </span>
+</a>
+{% empty %}
+<div class="empty"><div>No materials in this course yet.</div></div>
+{% endfor %}
+{% endblock %}

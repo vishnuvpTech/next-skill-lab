@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Register — TalentLens{% endblock %}
+{% block body %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div class="logo" style="justify-content:center;font-size:1.5rem;"><div class="logo-dot"></div> TalentLens</div>
+    </div>
+
+    {% if pending %}
+    <div style="text-align:center;padding:12px 0 8px;">
+      <div style="font-size:2rem;margin-bottom:12px;">⏳</div>
+      <div style="font-family:'Clash Display',sans-serif;font-size:1.15rem;font-weight:600;color:var(--bright);margin-bottom:8px;">Account Submitted</div>
+      <p style="font-size:.85rem;color:var(--muted);line-height:1.65;margin-bottom:20px;">
+        Your account request has been sent to the admin for approval.<br>
+        You will be able to log in once approved.
+      </p>
+      <a href="{% url 'login' %}" class="btn btn-ghost" style="width:100%;justify-content:center;">Back to Sign In</a>
+    </div>
+    {% else %}
+    <div class="auth-tabs">
+      <a href="{% url 'login' %}" class="auth-tab">Sign In</a>
+      <span class="auth-tab active">Register</span>
+    </div>
+    {% for message in messages %}<div class="alert alert-error">✕ {{ message }}</div>{% endfor %}
+    <form method="post">{% csrf_token %}
+      <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" type="text" name="name" placeholder="Jane Smith" required autofocus></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" name="email" placeholder="jane@company.com" required></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" name="password" placeholder="Min 6 characters" required></div>
+      <button type="submit" class="btn btn-teal btn-lg" style="width:100%;justify-content:center;margin-top:4px;">Request Access →</button>
+    </form>
+    <div style="margin-top:12px;font-size:.79rem;color:var(--muted);text-align:center;">
+      Registration requires admin approval before you can sign in.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

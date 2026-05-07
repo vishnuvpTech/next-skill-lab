@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+{% block title %}Question {{ q_num|add:1 }} — TalentLens{% endblock %}
+{% block body %}
+<div class="topbar">
+  <div class="logo"><div class="logo-dot"></div> TalentLens</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span style="font-size:.82rem;color:var(--muted);">Q <span id="qcur">{{ q_num|add:1 }}</span> / {{ total }}</span>
+    <div class="c-timer" id="c-timer">{% if link.time_per_question %}⏱ {{ link.time_per_question }}:00{% else %}⏱ No limit{% endif %}</div>
+  </div>
+</div>
+<div style="max-width:800px;margin:0 auto;padding:32px 24px;flex:1;">
+  <div class="c-progress-bar"><div class="c-progress-fill" style="width:{{ progress_pct }}%;"></div></div>
+
+  {% if link.mode == 'text' %}
+  <!-- ── TEXT MODE ─────────────────────────────────────────────────────── -->
+  <div class="video-section">
+    <div class="video-q-text">{{ answer.question_text }}</div>
+    <textarea id="txt-answer" class="form-textarea"
+      placeholder="Type your answer here…"
+      style="min-height:180px;margin-top:12px;resize:vertical;font-size:.95rem;line-height:1.6;"></textarea>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+      <span style="font-size:.78rem;color:var(--muted);" id="txt-status">🔒 Full screen active · 📷 Camera monitoring on</span>
+      <span style="font-size:.78rem;color:var(--rose);display:none;" id="fs-warn">⚠ Please return to full screen</span>
+    </div>
+    <!-- hidden camera for snapshots only -->
+    <video id="snap-cam" autoplay muted playsinline style="display:none;"></video>
+    <canvas id="snap-canvas" style="display:none;"></canvas>
+  </div>
+
+  {% else %}
+  <!-- ── VIDEO MODE ────────────────────────────────────────────────────── -->
+  <div class="video-section">
+    <div class="video-q-text">{{ answer.question_text }}</div>
+    <div class="video-preview-wrap">
+      <video class="video-preview" id="vid-preview" autoplay muted playsinline></video>
+      <div class="video-placeholder" id="vid-placeholder">
+        <div class="video-placeholder-icon">📷</div>
+        <div>Camera activates when you start recording</div>
+      </div>
+      <div class="rec-indicator" id="rec-indicator"><div class="rec-dot"></div> REC</div>
+    </div>
+    <div class="rec-clip" id="rec-clip">
+      <span style="font-size:.78rem;color:var(--green);font-family:monospace;display:flex;align-items:center;gap:6px;">✓ Recorded</span>
+      <video id="clip-player" controls style="flex:1;height:40px;accent-color:var(--teal);"></video>
+    </div>
+    <div class="video-controls">
+      <button class="rec-btn rec-start" id="btn-start" onclick="startRec()">🔴 Start Recording</button>
+      <button class="rec-btn rec-stop" id="btn-stop" onclick="stopRec()" style="display:none;">⬛ Stop</button>
+      <span style="font-size:.8rem;color:var(--muted);font-family:monospace;" id="rec-status">Click to record your answer</span>
+      <span style="font-size:.8rem;color:var(--rose);font-family:monospace;display:none;" id="rec-dur"></span>
+    </div>
+  </div>
+  {% endif %}
+
+  <div style="display:flex;justify-content:flex-end;margin-top:16px;gap:10px;">
+    {% if not is_last %}<button class="btn btn-ghost" id="btn-skip" onclick="skipQ()">Skip</button>{% endif %}
+    <button class="btn btn-teal" id="btn-next" onclick="nextQ()">{% if is_last %}Submit ✓{% else %}Next →{% endif %}</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const RESP_ID   = "{{ resp.id }}";
+const Q_NUM     = {{ q_num }};
+const IS_LAST   = {{ is_last|yesno:"true,false" }};
+const TIME_LIMIT = {{ link.time_per_question }} * 60;
+const MODE      = "{{ link.mode }}";
+const SAVE_URL  = "{% url 'save_answer' resp.id q_num %}";
+const SNAP_URL  = "{% url 'save_snapshot' resp.id %}";
+const NEXT_URL  = {% if is_last %}"{% url 'submit_interview' resp.id %}"{% else %}"{% url 'candidate_question' resp.id q_num|add:1 %}"{% endif %};
+const CSRF      = "{{ csrf_token }}";
+
+let timerInterval = null, saved = false;
+
+// ── Shared countdown timer ────────────────────────────────────────────────
+if (TIME_LIMIT > 0) {
+  let rem = TIME_LIMIT;
+  const td = document.getElementById('c-timer');
+  timerInterval = setInterval(() => {
+    rem--;
+    const m = Math.floor(rem / 60), s = rem % 60;
+    td.textContent = '⏱ ' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    td.className = 'c-timer' + (rem <= 30 ? ' danger' : rem <= 60 ? ' warn' : '');
+    if (rem <= 0) { clearInterval(timerInterval); nextQ(); }
+  }, 1000);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TEXT MODE
+// ════════════════════════════════════════════════════════════════════════════
+if (MODE === 'text') {
+
+  // -- Fullscreen ----------------------------------------------------------
+  function enterFullscreen() {
+    const el = document.documentElement;
+    (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen).call(el);
+  }
+  enterFullscreen();
+
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+  function onFsChange() {
+    const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    const warn = document.getElementById('fs-warn');
+    const status = document.getElementById('txt-status');
+    if (!inFs) {
+      warn.style.display = '';
+      status.style.display = 'none';
+      // Re-request after a short grace period
+      setTimeout(enterFullscreen, 2000);
+    } else {
+      warn.style.display = 'none';
+      status.style.display = '';
+    }
+  }
+
+  // -- Camera snapshots ----------------------------------------------------
+  let snapStream = null;
+
+  async function initSnapCamera() {
+    try {
+      snapStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      document.getElementById('snap-cam').srcObject = snapStream;
+      scheduleSnapshot();
+    } catch (e) {
+      console.warn('Snapshot camera unavailable:', e);
+    }
+  }
+
+  function scheduleSnapshot() {
+    // Random interval 20–50 seconds
+    const delay = (20 + Math.random() * 30) * 1000;
+    setTimeout(takeSnapshot, delay);
+  }
+
+  function takeSnapshot() {
+    const video = document.getElementById('snap-cam');
+    const canvas = document.getElementById('snap-canvas');
+    if (!snapStream || !video.videoWidth) { scheduleSnapshot(); return; }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+    const fd = new FormData();
+    fd.append('image', dataUrl);
+    fd.append('q_num', Q_NUM);
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fetch(SNAP_URL, { method: 'POST', body: fd }).catch(() => {});
+    scheduleSnapshot();
+  }
+
+  initSnapCamera();
+
+  // -- Save & navigate -----------------------------------------------------
+  async function saveTextAndProceed(url) {
+    if (saved) { location.href = url; return; }
+    const text = document.getElementById('txt-answer').value.trim();
+    if (text) {
+      const fd = new FormData();
+      fd.append('text_answer', text);
+      fd.append('csrfmiddlewaretoken', CSRF);
+      await fetch(SAVE_URL, { method: 'POST', body: fd }).catch(() => {});
+    }
+    saved = true;
+    if (snapStream) snapStream.getTracks().forEach(t => t.stop());
+    location.href = url;
+  }
+
+  window.nextQ = function() {
+    clearInterval(timerInterval);
+    saveTextAndProceed(NEXT_URL);
+  };
+
+  window.skipQ = function() {
+    clearInterval(timerInterval);
+    if (snapStream) snapStream.getTracks().forEach(t => t.stop());
+    location.href = NEXT_URL;
+  };
+
+// ════════════════════════════════════════════════════════════════════════════
+// VIDEO MODE
+// ════════════════════════════════════════════════════════════════════════════
+} else {
+
+  let mediaRecorder = null, recordedChunks = [], recStream = null, recTimer = null, recSecs = 0, videoBlob = null;
+
+  window.startRec = async function() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      recStream = stream;
+      document.getElementById('vid-preview').srcObject = stream;
+      document.getElementById('vid-placeholder').style.display = 'none';
+      document.getElementById('rec-indicator').style.display = 'flex';
+      document.getElementById('btn-start').style.display = 'none';
+      document.getElementById('btn-stop').style.display = 'flex';
+      document.getElementById('rec-dur').style.display = '';
+      document.getElementById('rec-status').textContent = 'Recording…';
+      recordedChunks = []; recSecs = 0;
+      recTimer = setInterval(() => {
+        recSecs++;
+        const m = Math.floor(recSecs / 60), s = recSecs % 60;
+        document.getElementById('rec-dur').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+      }, 1000);
+      let mimeType = 'video/webm';
+      try { if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) mimeType = 'video/webm;codecs=vp8,opus'; } catch(e){}
+      mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = finalizeRec;
+      mediaRecorder.start(200);
+    } catch(e) { alert('Camera/mic permission denied. Please allow access and try again.'); }
+  };
+
+  window.stopRec = function() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    clearInterval(recTimer);
+    if (recStream) recStream.getTracks().forEach(t => t.stop());
+    document.getElementById('rec-indicator').style.display = 'none';
+    document.getElementById('btn-stop').style.display = 'none';
+    document.getElementById('rec-dur').style.display = 'none';
+    document.getElementById('rec-status').textContent = 'Processing…';
+  };
+
+  function finalizeRec() {
+    const mimeType = recordedChunks[0]?.type || 'video/webm';
+    videoBlob = new Blob(recordedChunks, { type: mimeType });
+    const url = URL.createObjectURL(videoBlob);
+    const clip = document.getElementById('rec-clip');
+    const player = document.getElementById('clip-player');
+    clip.classList.add('show');
+    player.src = url;
+    document.getElementById('btn-start').style.display = 'flex';
+    document.getElementById('btn-start').textContent = '🔴 Re-record';
+    document.getElementById('rec-status').textContent = '✓ Recorded (' + recSecs + 's)';
+  }
+
+  async function saveAndProceed(url) {
+    if (saved) { location.href = url; return; }
+    if (videoBlob) {
+      const fd = new FormData();
+      fd.append('video', videoBlob, 'answer.webm');
+      fd.append('csrfmiddlewaretoken', CSRF);
+      await fetch(SAVE_URL, { method: 'POST', body: fd }).catch(() => {});
+    }
+    saved = true;
+    location.href = url;
+  }
+
+  window.nextQ = function() {
+    clearInterval(timerInterval);
+    if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); setTimeout(() => saveAndProceed(NEXT_URL), 800); }
+    else saveAndProceed(NEXT_URL);
+  };
+
+  window.skipQ = function() {
+    clearInterval(timerInterval);
+    location.href = NEXT_URL;
+  };
+}
+</script>
+{% endblock %}

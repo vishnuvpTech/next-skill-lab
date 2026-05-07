@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}{{ link.topic_name }} Interview — TalentLens{% endblock %}
+{% block body %}
+<div class="c-hero">
+  <div class="logo" style="font-size:1.6rem;margin-bottom:32px;"><div class="logo-dot"></div> TalentLens</div>
+  <h1 style="font-family:'Clash Display',sans-serif;font-size:2.4rem;font-weight:700;line-height:1.15;margin-bottom:12px;color:var(--bright);">{{ link.topic_name }} Interview</h1>
+  <p style="color:var(--muted);max-width:480px;margin-bottom:24px;font-size:.95rem;">
+    {{ link.level|title }}-level mock interview on {{ link.topic_name }} · {{ link.dept_name }}
+  </p>
+  <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:28px;">
+    <span class="badge badge-{{ link.level }}">{{ link.level }}</span>
+    <span class="badge badge-dept">{{ link.dept_name }}</span>
+    <span style="font-size:.82rem;color:var(--muted);">{{ link.question_count }} questions</span>
+    {% if link.time_per_question %}<span style="font-size:.82rem;color:var(--muted);">⏱ {{ link.time_per_question }} min/q</span>{% endif %}
+  </div>
+  <div class="c-form-card">
+    {% for message in messages %}<div class="alert alert-error">✕ {{ message }}</div>{% endfor %}
+    {% if link.mode == 'text' %}
+    <div class="c-note">
+      <strong style="color:var(--dim);">⌨️ Text Interview</strong><br>
+      Answer each question by typing your response. The interview will run in <strong>full screen</strong> — do not exit full screen during the session.
+      Your camera will be used for periodic identity snapshots (no video is recorded).
+      You'll have {% if link.time_per_question %}<strong>{{ link.time_per_question }} minute(s)</strong> per question{% else %}<strong>no time limit</strong>{% endif %}.
+    </div>
+    {% else %}
+    <div class="c-note">
+      <strong style="color:var(--dim);">🎥 Video Interview</strong><br>
+      This interview uses video recording. Each question will activate your camera and microphone.
+      You'll have {% if link.time_per_question %}<strong>{{ link.time_per_question }} minute(s)</strong> per question{% else %}<strong>no time limit</strong>{% endif %}.
+      Your responses will be reviewed by the admin team.
+    </div>
+    {% endif %}
+    <form method="post" action="{% url 'candidate_start' link.id %}">{% csrf_token %}
+      <div class="form-group"><label class="form-label">Your Full Name</label><input class="form-input" name="name" type="text" placeholder="Enter your name" required></div>
+      <div class="form-group"><label class="form-label">Email Address</label><input class="form-input" name="email" type="email" placeholder="you@email.com" required></div>
+      <button type="submit" class="btn btn-teal btn-lg" style="width:100%;justify-content:center;">Begin Interview →</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

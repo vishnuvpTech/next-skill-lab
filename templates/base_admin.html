@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button class="menu-toggle" id="menu-toggle" aria-label="Menu">&#9776;</button>
+    <a href="{% url 'dashboard' %}" class="logo"><div class="logo-dot"></div> TalentLens</a>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme"></button>
+    <div class="admin-badge">{{ request.user.name }}<span class="role-pill role-{{ request.user.role }}">{{ request.user.role }}</span></div>
+    <a href="{% url 'logout' %}" class="btn btn-ghost btn-sm">Logout</a>
+  </div>
+</div>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<div class="admin-layout">
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-section">Manage</div>
+    <a href="{% url 'dashboard' %}" class="sidebar-item {% if active_panel == 'dashboard' %}active{% endif %}"><span class="sidebar-icon">📊</span> Dashboard</a>
+    <a href="{% url 'departments' %}" class="sidebar-item {% if active_panel == 'departments' %}active{% endif %}"><span class="sidebar-icon">🏢</span> Departments</a>
+    <a href="{% url 'questions_home' %}" class="sidebar-item {% if active_panel == 'questions' %}active{% endif %}"><span class="sidebar-icon">❓</span> Questions</a>
+    <div class="sidebar-section">Interviews</div>
+    <a href="{% url 'links' %}" class="sidebar-item {% if active_panel == 'links' %}active{% endif %}"><span class="sidebar-icon">🔗</span> Links</a>
+    <a href="{% url 'responses' %}" class="sidebar-item {% if active_panel == 'responses' %}active{% endif %}"><span class="sidebar-icon">📋</span> Responses</a>
+    {% if request.user.can_edit %}
+    <div class="sidebar-section">Courses</div>
+    <a href="{% url 'course_list' %}" class="sidebar-item {% if active_panel == 'courses' %}active{% endif %}"><span class="sidebar-icon">📚</span> Courses</a>
+    {% endif %}
+    {% if request.user.is_superadmin %}
+    <div class="sidebar-section">Team</div>
+    <a href="{% url 'users' %}" class="sidebar-item {% if active_panel == 'users' %}active{% endif %}"><span class="sidebar-icon">👥</span> Users</a>
+    {% endif %}
+    <div class="sidebar-section">My Learning</div>
+    <a href="{% url 'my_courses' %}" class="sidebar-item {% if active_panel == 'my_courses' %}active{% endif %}"><span class="sidebar-icon">🎓</span> My Courses</a>
+  </nav>
+  <div class="content-area">
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}">
+      {% if message.tags == 'error' %}✕{% elif message.tags == 'success' %}✓{% else %}ℹ{% endif %} {{ message }}
+    </div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+<script>
+// ── Sidebar ──────────────────────────────────────────────────────────────
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+  document.getElementById('sidebar-overlay').classList.toggle('active');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebar-overlay').classList.remove('active');
+}
+document.getElementById('menu-toggle').addEventListener('click', toggleSidebar);
+
+// ── Theme ─────────────────────────────────────────────────────────────────
+function applyTheme(t) {
+  if (t === 'light') document.documentElement.setAttribute('data-theme','light');
+  else document.documentElement.removeAttribute('data-theme');
+  const btn = document.getElementById('theme-btn');
+  if (btn) { btn.textContent = t === 'light' ? '🌙' : '☀️'; btn.title = t === 'light' ? 'Dark mode' : 'Light mode'; }
+}
+function toggleTheme() {
+  const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  localStorage.setItem('tl-theme', next);
+  applyTheme(next);
+}
+applyTheme(localStorage.getItem('tl-theme') || 'dark');
+</script>
+{% endblock %}

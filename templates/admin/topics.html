@@ -1,0 +1,58 @@
+{% extends 'base_admin.html' %}
+{% block title %}{{ dept.name }} Topics — TalentLens{% endblock %}
+{% block content %}
+<div class="bc">
+  <a href="{% url 'departments' %}" class="bc-item">Departments</a>
+  <span class="bc-sep">›</span>
+  <span class="bc-curr">{{ dept.name }}</span>
+</div>
+<div class="section-header">
+  <div><div class="section-title">{{ dept.name }}</div><div class="section-sub">{{ topic_data|length }} topic{{ topic_data|length|pluralize }}</div></div>
+  {% if request.user.can_edit %}
+  <button class="btn btn-teal" onclick="document.getElementById('add-topic-modal').style.display='flex'">+ New Topic</button>
+  {% endif %}
+</div>
+{% if topic_data %}
+{% for td in topic_data %}
+<div style="margin-bottom:6px;">
+  <a href="{% url 'questions' td.topic.id %}" class="topic-hd" style="display:flex;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="topic-name">{{ td.topic.name }}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="topic-chips">
+        <span class="badge badge-basic">{{ td.basic_count }} basic</span>
+        <span class="badge badge-intermediate">{{ td.intermediate_count }} int</span>
+        <span class="badge badge-advanced">{{ td.advanced_count }} adv</span>
+      </div>
+      {% if request.user.can_edit %}
+      <form method="post" action="{% url 'delete_topic' td.topic.id %}" onsubmit="return confirm('Delete {{ td.topic.name }}?')">
+        {% csrf_token %}<button type="submit" class="btn btn-danger btn-icon btn-sm" onclick="event.stopPropagation()">✕</button>
+      </form>
+      {% endif %}
+    </div>
+  </a>
+</div>
+{% endfor %}
+{% else %}
+<div class="empty"><div class="empty-ico">📝</div><div>No topics yet. Add one to start adding questions.</div></div>
+{% endif %}
+
+{% if request.user.can_edit %}
+<div id="add-topic-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--ink2);border:1px solid var(--line2);border-radius:var(--r-xl);padding:28px;width:100%;max-width:480px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-family:'Clash Display',sans-serif;font-size:1.1rem;font-weight:600;color:var(--bright);">New Topic</div>
+      <button onclick="document.getElementById('add-topic-modal').style.display='none'" style="background:var(--ink3);border:1px solid var(--line);color:var(--muted);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <form method="post" action="{% url 'add_topic' dept.id %}">{% csrf_token %}
+      <div class="form-group"><label class="form-label">Topic Name</label><input class="form-input" name="name" placeholder="e.g. Data Structures, SQL…" required></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('add-topic-modal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn btn-teal">Add Topic</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

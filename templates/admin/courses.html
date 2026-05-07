@@ -1,0 +1,113 @@
+{% extends 'base_admin.html' %}
+{% block title %}Courses — TalentLens{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div><div class="section-title">Courses</div><div class="section-sub">Create and manage learning courses</div></div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <div class="view-toggle">
+      <button class="view-btn" id="vbtn-list" onclick="setView('list')" title="List view">&#9776;</button>
+      <button class="view-btn" id="vbtn-grid" onclick="setView('grid')" title="Grid view">&#8859;</button>
+    </div>
+    {% if request.user.can_edit %}
+    <button class="btn btn-teal" onclick="document.getElementById('create-course-modal').style.display='flex'">+ New Course</button>
+    {% endif %}
+  </div>
+</div>
+
+{% if courses %}
+<!-- LIST view -->
+<div id="view-list">
+  {% for c in courses %}
+  <div class="link-card" style="margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+      <div>
+        <strong style="color:var(--bright);font-size:1rem;">{{ c.title }}</strong>
+        {% if not c.is_active %}<span style="font-size:.72rem;color:var(--rose);margin-left:8px;">inactive</span>{% endif %}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        {% if request.user.can_edit %}
+        <a href="{% url 'course_detail' c.id %}" class="btn btn-ghost btn-sm">Manage →</a>
+        <form method="post" action="{% url 'delete_course' c.id %}" onsubmit="return confirm('Delete course and all its materials?')" style="display:inline;">
+          {% csrf_token %}<button type="submit" class="btn btn-danger btn-icon btn-sm">✕</button>
+        </form>
+        {% else %}
+        <a href="{% url 'course_detail' c.id %}" class="btn btn-ghost btn-sm">View →</a>
+        {% endif %}
+      </div>
+    </div>
+    {% if c.description %}<p style="font-size:.85rem;color:var(--muted);margin-bottom:10px;">{{ c.description|truncatechars:140 }}</p>{% endif %}
+    <div style="display:flex;gap:16px;font-size:.79rem;color:var(--muted);font-family:monospace;">
+      <span>📎 {{ c.material_count }} material{{ c.material_count|pluralize }}</span>
+      <span>👤 {{ c.assignment_count }} assigned</span>
+      <span>🕐 {{ c.created_at|date:"M d, Y" }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- GRID view -->
+<div id="view-grid" class="courses-grid" style="display:none;">
+  {% for c in courses %}
+  <div class="course-grid-card">
+    <div>
+      <div style="font-size:.95rem;font-weight:600;color:var(--bright);margin-bottom:4px;">
+        {{ c.title }}
+        {% if not c.is_active %}<span style="font-size:.68rem;color:var(--rose);margin-left:6px;">inactive</span>{% endif %}
+      </div>
+      {% if c.description %}
+      <p style="font-size:.8rem;color:var(--muted);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">{{ c.description }}</p>
+      {% endif %}
+    </div>
+    <div style="display:flex;gap:10px;font-size:.75rem;color:var(--muted);font-family:monospace;flex-wrap:wrap;margin-top:auto;">
+      <span>📎 {{ c.material_count }}</span>
+      <span>👤 {{ c.assignment_count }}</span>
+      <span>{{ c.created_at|date:"M d, Y" }}</span>
+    </div>
+    <div style="display:flex;gap:6px;padding-top:8px;border-top:1px solid var(--line);">
+      {% if request.user.can_edit %}
+      <a href="{% url 'course_detail' c.id %}" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;">Manage →</a>
+      <form method="post" action="{% url 'delete_course' c.id %}" onsubmit="return confirm('Delete course?')" style="display:inline;">
+        {% csrf_token %}<button type="submit" class="btn btn-danger btn-icon btn-sm">✕</button>
+      </form>
+      {% else %}
+      <a href="{% url 'course_detail' c.id %}" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;">View →</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty"><div class="empty-ico">📚</div><div>No courses yet.{% if request.user.can_edit %} Click + New Course to get started.{% endif %}</div></div>
+{% endif %}
+
+{% if request.user.can_edit %}
+<div id="create-course-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--ink2);border:1px solid var(--line2);border-radius:var(--r-xl);padding:28px;width:100%;max-width:500px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-family:'Clash Display',sans-serif;font-size:1.1rem;font-weight:600;color:var(--bright);">New Course</div>
+      <button onclick="document.getElementById('create-course-modal').style.display='none'" style="background:var(--ink3);border:1px solid var(--line);color:var(--muted);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <form method="post" action="{% url 'create_course' %}">{% csrf_token %}
+      <div class="form-group"><label class="form-label">Title</label><input class="form-input" name="title" required placeholder="e.g. Python Fundamentals"></div>
+      <div class="form-group"><label class="form-label">Description <span style="opacity:.5;font-weight:400;">(optional)</span></label><textarea class="form-textarea" name="description" rows="3" placeholder="What will learners gain from this course?"></textarea></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('create-course-modal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn btn-teal">Create Course</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script>
+function setView(v) {
+  localStorage.setItem('courses-view', v);
+  document.getElementById('view-list').style.display = v === 'list' ? '' : 'none';
+  document.getElementById('view-grid').style.display = v === 'grid' ? '' : 'none';
+  document.getElementById('vbtn-list').classList.toggle('active', v === 'list');
+  document.getElementById('vbtn-grid').classList.toggle('active', v === 'grid');
+}
+setView(localStorage.getItem('courses-view') || 'list');
+</script>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends 'base_admin.html' %}
+{% block title %}Questions — TalentLens{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div><div class="section-title">Questions</div><div class="section-sub">Select a department to manage its topics and questions</div></div>
+</div>
+{% if departments %}
+<div class="grid-auto">
+{% for d in departments %}
+<div class="card card-click" onclick="location.href='{% url 'topics' d.id %}'" style="text-align:center;padding:28px;">
+  <div style="font-size:2rem;margin-bottom:8px;">🏢</div>
+  <div style="font-weight:600;color:var(--bright);">{{ d.name }}</div>
+  <div style="font-size:.8rem;color:var(--muted);margin-top:4px;">{{ d.topic_count }} topics</div>
+</div>
+{% endfor %}
+</div>
+{% else %}
+<div class="empty"><div class="empty-ico">📁</div><div>Create departments first from the Departments panel.</div></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends 'base_admin.html' %}
+{% block title %}{{ topic.name }} Questions — TalentLens{% endblock %}
+{% block content %}
+<div class="bc">
+  <a href="{% url 'departments' %}" class="bc-item">Departments</a>
+  <span class="bc-sep">›</span>
+  <a href="{% url 'topics' topic.department.id %}" class="bc-item">{{ topic.department.name }}</a>
+  <span class="bc-sep">›</span>
+  <span class="bc-curr">{{ topic.name }}</span>
+</div>
+<div class="section-header">
+  <div><div class="section-title">{{ topic.name }}</div><div class="section-sub">Manage questions by difficulty level</div></div>
+  {% if request.user.can_edit %}
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-ghost" onclick="document.getElementById('bulk-q-modal').style.display='flex'">Bulk Upload</button>
+    <button class="btn btn-teal" onclick="document.getElementById('add-q-modal').style.display='flex'">+ Add Question</button>
+  </div>
+  {% endif %}
+</div>
+<div class="level-tabs">
+  <a href="?level=basic" class="level-tab {% if current_level == 'basic' %}basic-active{% endif %}">Basic <span style="font-size:.75rem;opacity:.7;">({{ basic_count }})</span></a>
+  <a href="?level=intermediate" class="level-tab {% if current_level == 'intermediate' %}intermediate-active{% endif %}">Intermediate <span style="font-size:.75rem;opacity:.7;">({{ intermediate_count }})</span></a>
+  <a href="?level=advanced" class="level-tab {% if current_level == 'advanced' %}advanced-active{% endif %}">Advanced <span style="font-size:.75rem;opacity:.7;">({{ advanced_count }})</span></a>
+</div>
+{% if questions %}
+{% for q in questions %}
+<div class="q-item" style="flex-direction:column;align-items:flex-start;gap:6px;">
+  <div style="display:flex;align-items:flex-start;gap:10px;width:100%;">
+    <span class="q-num">Q{{ forloop.counter }}</span>
+    <span class="q-text" style="flex:1;">{{ q.text }}</span>
+    {% if request.user.can_edit %}
+    <form method="post" action="{% url 'delete_question' q.id %}" onsubmit="return confirm('Delete this question?')" style="flex-shrink:0;">
+      {% csrf_token %}<button type="submit" class="btn btn-danger btn-icon btn-sm">✕</button>
+    </form>
+    {% endif %}
+  </div>
+  {% if q.answer %}
+  <div style="margin-left:36px;font-size:.8rem;color:var(--muted);background:var(--ink3);border-left:3px solid var(--teal);padding:6px 10px;border-radius:0 var(--r) var(--r) 0;width:calc(100% - 36px);">
+    <span style="font-weight:600;color:var(--teal);margin-right:6px;">Answer:</span>{{ q.answer }}
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<div class="empty"><div class="empty-ico">📝</div><div>No {{ current_level }} questions yet.{% if request.user.can_edit %} Click + Add Question.{% endif %}</div></div>
+{% endif %}
+
+{% if request.user.can_edit %}
+<div id="add-q-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--ink2);border:1px solid var(--line2);border-radius:var(--r-xl);padding:28px;width:100%;max-width:520px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-family:'Clash Display',sans-serif;font-size:1.1rem;font-weight:600;color:var(--bright);">Add Question</div>
+      <button onclick="document.getElementById('add-q-modal').style.display='none'" style="background:var(--ink3);border:1px solid var(--line);color:var(--muted);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <form method="post" action="{% url 'add_question' topic.id %}">{% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Level</label>
+        <select class="form-select" name="level">
+          <option value="basic" {% if current_level == 'basic' %}selected{% endif %}>Basic</option>
+          <option value="intermediate" {% if current_level == 'intermediate' %}selected{% endif %}>Intermediate</option>
+          <option value="advanced" {% if current_level == 'advanced' %}selected{% endif %}>Advanced</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Question Text</label><textarea class="form-textarea" name="text" placeholder="Type the interview question…" required></textarea></div>
+      <div class="form-group"><label class="form-label">Answer <span style="opacity:.5;font-weight:400;">(optional)</span></label><textarea class="form-textarea" name="answer" placeholder="Expected / model answer…" rows="3"></textarea></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('add-q-modal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn btn-teal">Add Question</button>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- Bulk Upload Modal -->
+<div id="bulk-q-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--ink2);border:1px solid var(--line2);border-radius:var(--r-xl);padding:28px;width:100%;max-width:540px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-family:'Clash Display',sans-serif;font-size:1.1rem;font-weight:600;color:var(--bright);">Bulk Upload Questions</div>
+      <button onclick="document.getElementById('bulk-q-modal').style.display='none'" style="background:var(--ink3);border:1px solid var(--line);color:var(--muted);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <form method="post" action="{% url 'bulk_add_questions' topic.id %}" enctype="multipart/form-data">{% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Upload File</label>
+        <input type="file" name="file" accept=".csv,.json" required
+               style="width:100%;padding:10px 12px;background:var(--ink3);border:1px solid var(--line2);border-radius:var(--r);color:var(--bright);font-size:.875rem;cursor:pointer;">
+      </div>
+      <div style="background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:18px;font-size:.8rem;color:var(--muted);line-height:1.7;">
+        <strong style="color:var(--bright);display:block;margin-bottom:6px;">Accepted formats</strong>
+        <div><strong style="color:var(--bright);">CSV</strong> — columns: <code style="color:var(--teal);">level</code>, <code style="color:var(--teal);">question_text</code>, <code style="color:var(--teal);">answer</code></div>
+        <div style="margin-top:2px;opacity:.75;">level,question_text,answer</div>
+        <div style="opacity:.75;">basic,"What is a Python decorator?","A function that wraps another function."</div>
+        <div style="margin-top:8px;"><strong style="color:var(--bright);">JSON</strong> — array of objects with <code style="color:var(--teal);">level</code>, <code style="color:var(--teal);">question_text</code>, and <code style="color:var(--teal);">answer</code> keys</div>
+        <div style="margin-top:2px;opacity:.75;">[{"level":"basic","question_text":"What is a decorator?","answer":"A wrapper function."}]</div>
+        <div style="margin-top:8px;opacity:.75;">Valid levels: <code style="color:var(--teal);">basic</code>, <code style="color:var(--teal);">intermediate</code>, <code style="color:var(--teal);">advanced</code></div>
+        <div style="margin-top:4px;opacity:.6;">answer is optional &nbsp;·&nbsp; Also accepted: "Question Text", "question", "text" / "difficulty"</div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('bulk-q-modal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn btn-teal">Upload</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends 'base_admin.html' %}
+{% block title %}Team — TalentLens{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div>
+    <div class="section-title">Team Members</div>
+    <div class="section-sub">Manage users, roles and access requests</div>
+  </div>
+  <button class="btn btn-teal" onclick="document.getElementById('add-user-modal').style.display='flex'">+ Add User</button>
+</div>
+
+<!-- ── Pending Approval ───────────────────────────────────────────────────── -->
+{% if pending_users %}
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+  <span style="font-size:.72rem;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;">Pending Approval</span>
+  <span style="font-size:.72rem;background:rgba(255,209,102,.12);color:var(--amber);border:1px solid rgba(255,209,102,.3);padding:1px 8px;border-radius:10px;font-family:monospace;">{{ pending_users|length }}</span>
+</div>
+{% for u in pending_users %}
+<div class="user-row" style="border-color:rgba(255,209,102,.25);background:rgba(255,209,102,.04);margin-bottom:8px;">
+  <div class="user-avatar" style="background:rgba(255,209,102,.15);color:var(--amber);">{{ u.name|first|upper }}</div>
+  <div style="flex:1;">
+    <div style="font-weight:600;">{{ u.name }}</div>
+    <div style="font-size:.8rem;color:var(--muted);font-family:monospace;">{{ u.email }}</div>
+    <div style="font-size:.73rem;color:var(--muted);margin-top:2px;">Registered {{ u.created_at|date:"M d, Y H:i" }}</div>
+  </div>
+  <div style="display:flex;gap:7px;align-items:center;">
+    <form method="post" action="{% url 'approve_user' u.id %}" style="display:inline;">
+      {% csrf_token %}<input type="hidden" name="action" value="approve">
+      <button type="submit" class="btn btn-teal btn-sm">✓ Approve</button>
+    </form>
+    <form method="post" action="{% url 'approve_user' u.id %}" onsubmit="return confirm('Reject and remove {{ u.name }}?')" style="display:inline;">
+      {% csrf_token %}<input type="hidden" name="action" value="reject">
+      <button type="submit" class="btn btn-danger btn-sm">✕ Reject</button>
+    </form>
+  </div>
+</div>
+{% endfor %}
+<div style="height:1px;background:var(--line);margin:20px 0;"></div>
+{% endif %}
+
+<!-- ── Active Users ───────────────────────────────────────────────────────── -->
+{% if user_list %}
+<div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Active Users ({{ user_list|length }})</div>
+{% for u in user_list %}
+<div class="user-row" style="margin-bottom:8px;">
+  <div class="user-avatar" style="background:rgba(0,212,170,.15);color:var(--teal);">{{ u.name|first|upper }}</div>
+  <div style="flex:1;">
+    <div style="font-weight:600;">{{ u.name }} {% if u == request.user %}<span style="font-size:.72rem;color:var(--muted);">(you)</span>{% endif %}</div>
+    <div style="font-size:.8rem;color:var(--muted);font-family:monospace;">{{ u.email }}</div>
+  </div>
+  <div style="display:flex;gap:7px;align-items:center;">
+    <span class="role-pill role-{{ u.role }}">{{ u.role }}</span>
+    {% if u != request.user %}
+    <button class="btn btn-ghost btn-sm" onclick="openRoleModal('{{ u.id }}','{{ u.role }}','{{ u.name }}')">Change Role</button>
+    <form method="post" action="{% url 'delete_user' u.id %}" onsubmit="return confirm('Remove {{ u.name }}?')" style="display:inline;">
+      {% csrf_token %}<button type="submit" class="btn btn-danger btn-sm">Remove</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="empty"><div class="empty-ico">👥</div><div>No active users yet.</div></div>
+{% endif %}
+
+<!-- ── Add User Modal ─────────────────────────────────────────────────────── -->
+<div id="add-user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--ink2);border:1px solid var(--line2);border-radius:var(--r-xl);padding:28px;width:100%;max-width:460px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-family:'Clash Display',sans-serif;font-size:1.1rem;font-weight:600;color:var(--bright);">Add User</div>
+      <button onclick="document.getElementById('add-user-modal').style.display='none'" style="background:var(--ink3);border:1px solid var(--line);color:var(--muted);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <form method="post" action="{% url 'admin_add_user' %}">{% csrf_token %}
+      <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" name="name" required placeholder="Jane Smith"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" name="email" required placeholder="jane@company.com"></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" name="password" required placeholder="Min 6 characters"></div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-select" name="role">
+          <option value="viewer">Viewer — read-only</option>
+          <option value="interviewer">Interviewer — manage content</option>
+          <option value="superadmin">Super Admin — full access</option>
+        </select>
+      </div>
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:14px;padding:9px 12px;background:var(--ink3);border-radius:var(--r-sm);border:1px solid var(--line);">
+        Users added here are immediately active and can sign in right away.
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('add-user-modal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn btn-teal">Create User</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Change Role Modal ──────────────────────────────────────────────────── -->
+<div id="role-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--ink2);border:1px solid var(--line2);border-radius:var(--r-xl);padding:28px;width:100%;max-width:400px;">
+    <div style="font-family:'Clash Display',sans-serif;font-size:1.1rem;font-weight:600;color:var(--bright);margin-bottom:8px;">Change Role</div>
+    <div id="role-modal-name" style="font-size:.85rem;color:var(--muted);margin-bottom:16px;"></div>
+    <form id="role-form" method="post">{% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-select" name="role" id="role-select">
+          <option value="superadmin">Super Admin</option>
+          <option value="interviewer">Interviewer</option>
+          <option value="viewer">Viewer</option>
+        </select>
+      </div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:14px;line-height:1.6;">
+        <strong style="color:var(--dim);">Super Admin</strong> — full access incl. user mgmt<br>
+        <strong style="color:var(--dim);">Interviewer</strong> — manage content + view responses<br>
+        <strong style="color:var(--dim);">Viewer</strong> — read-only
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('role-modal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn btn-teal">Save Role</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function openRoleModal(userId, currentRole, userName) {
+  document.getElementById('role-form').action = '/admin-panel/users/' + userId + '/role/';
+  document.getElementById('role-select').value = currentRole;
+  document.getElementById('role-modal-name').textContent = 'Changing role for ' + userName;
+  document.getElementById('role-modal').style.display = 'flex';
+}
+</script>
+{% endblock %}

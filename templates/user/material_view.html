@@ -1,0 +1,114 @@
+{% extends 'base_admin.html' %}
+{% block title %}{{ material.title }} — TalentLens{% endblock %}
+{% block content %}
+<div class="bc">
+  <a href="{% url 'my_courses' %}" class="bc-item">My Courses</a>
+  <span class="bc-sep">›</span>
+  <a href="{% url 'my_course_detail' assignment.id %}" class="bc-item">{{ assignment.course.title }}</a>
+  <span class="bc-sep">›</span>
+  <span class="bc-curr">{{ material.title }}</span>
+</div>
+
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+  <span style="font-size:1.4rem;">{{ material.type_icon }}</span>
+  <div>
+    <div style="font-size:1.15rem;font-weight:600;color:var(--bright);">{{ material.title }}</div>
+    <div style="font-size:.78rem;color:var(--muted);">{{ material.get_material_type_display }}</div>
+  </div>
+  {% if progress.completed %}
+  <span style="margin-left:auto;font-size:.82rem;color:var(--green);font-family:monospace;">✓ Completed {{ progress.completed_at|date:"M d, Y" }}</span>
+  {% endif %}
+</div>
+
+<!-- ── Content area ──────────────────────────────────────────────────────── -->
+<div style="background:var(--ink2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:24px;">
+
+  {% if material.material_type == 'video_file' %}
+  <video controls style="width:100%;max-height:480px;display:block;background:#000;">
+    <source src="{{ material.file.url }}">
+    Your browser does not support the video element.
+  </video>
+
+  {% elif material.material_type == 'image' %}
+  <img src="{{ material.file.url }}" alt="{{ material.title }}" style="width:100%;max-height:600px;object-fit:contain;display:block;background:#000;">
+
+  {% elif material.material_type == 'pdf' %}
+  <iframe src="{{ material.file.url }}" style="width:100%;height:70vh;border:0;display:block;"></iframe>
+
+  {% elif material.material_type == 'doc' %}
+  <div style="padding:32px;text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">📝</div>
+    <div style="color:var(--bright);margin-bottom:16px;">{{ material.title }}</div>
+    <a href="{{ material.file.url }}" download class="btn btn-teal">Download Document</a>
+  </div>
+
+  {% elif material.material_type == 'video_link' %}
+  {% if embed_url %}
+  <div style="position:relative;padding-top:56.25%;">
+    <iframe src="{{ embed_url }}" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+  </div>
+  {% else %}
+  <div style="padding:32px;text-align:center;">
+    <div style="color:var(--muted);margin-bottom:12px;">External video</div>
+    <a href="{{ material.video_url }}" target="_blank" rel="noopener" class="btn btn-teal">Open Video ↗</a>
+  </div>
+  {% endif %}
+  {% endif %}
+
+</div>
+
+<!-- ── Actions ───────────────────────────────────────────────────────────── -->
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+  <div style="display:flex;gap:8px;">
+    {% if prev_mat %}
+    <a href="{% url 'view_material' assignment.id prev_mat.id %}" class="btn btn-ghost">← Previous</a>
+    {% endif %}
+    {% if next_mat %}
+    <a href="{% url 'view_material' assignment.id next_mat.id %}" class="btn btn-ghost" id="btn-next-mat">Next →</a>
+    {% endif %}
+  </div>
+  {% if not progress.completed %}
+  <button id="btn-complete" class="btn btn-teal" onclick="markComplete()">Mark as Complete ✓</button>
+  {% else %}
+  <div style="display:flex;gap:8px;">
+    {% if next_mat %}
+    <a href="{% url 'view_material' assignment.id next_mat.id %}" class="btn btn-teal">Next Material →</a>
+    {% else %}
+    <a href="{% url 'my_course_detail' assignment.id %}" class="btn btn-teal">Back to Course ✓</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const COMPLETE_URL = "{% url 'mark_material_complete' assignment.id material.id %}";
+const CSRF = "{{ csrf_token }}";
+{% if next_mat %}const NEXT_MAT_URL = "{% url 'view_material' assignment.id next_mat.id %}";{% endif %}
+{% if not next_mat %}const COURSE_URL = "{% url 'my_course_detail' assignment.id %}";{% endif %}
+
+async function markComplete() {
+  const btn = document.getElementById('btn-complete');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    const res = await fetch(COMPLETE_URL, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.ok) {
+      btn.textContent = '✓ Completed!';
+      btn.style.background = 'var(--green)';
+      setTimeout(() => {
+        {% if next_mat %}location.href = NEXT_MAT_URL;
+        {% else %}location.href = COURSE_URL;{% endif %}
+      }, 800);
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Mark as Complete ✓';
+  }
+}
+</script>
+{% endblock %}

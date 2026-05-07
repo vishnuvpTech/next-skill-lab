@@ -1,0 +1,189 @@
+{% extends 'base_admin.html' %}
+{% block title %}{{ course.title }} — TalentLens{% endblock %}
+{% block content %}
+<div class="bc">
+  <a href="{% url 'course_list' %}" class="bc-item">Courses</a>
+  <span class="bc-sep">›</span>
+  <span class="bc-curr">{{ course.title }}</span>
+</div>
+<div class="section-header">
+  <div>
+    <div class="section-title">{{ course.title }}</div>
+    {% if course.description %}<div class="section-sub">{{ course.description }}</div>{% endif %}
+  </div>
+  {% if request.user.can_edit %}
+  <button class="btn btn-teal" onclick="document.getElementById('add-mat-modal').style.display='flex'">+ Add Material</button>
+  {% endif %}
+</div>
+
+<!-- ── Materials ─────────────────────────────────────────────────────────── -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+  <span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">
+    Materials <span style="color:var(--teal);">({{ materials|length }})</span>
+  </span>
+  {% if materials %}
+  <div class="view-toggle">
+    <button class="view-btn" id="mvbtn-list" onclick="setMatView('list')" title="List view">&#9776;</button>
+    <button class="view-btn" id="mvbtn-grid" onclick="setMatView('grid')" title="Grid view">&#8859;</button>
+  </div>
+  {% endif %}
+</div>
+{% if materials %}
+<!-- Materials LIST -->
+<div id="mat-view-list">
+  {% for m in materials %}
+  <div class="q-item" style="align-items:center;gap:10px;">
+    <span style="font-size:1.1rem;flex-shrink:0;">{{ m.type_icon }}</span>
+    <div style="flex:1;min-width:0;">
+      <div style="color:var(--bright);font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ m.title }}</div>
+      <div style="font-size:.75rem;color:var(--muted);font-family:monospace;">{{ m.get_material_type_display }} · order {{ m.order }}</div>
+    </div>
+    {% if request.user.can_edit %}
+    <form method="post" action="{% url 'delete_material' course.id m.id %}" onsubmit="return confirm('Remove this material?')" style="flex-shrink:0;">
+      {% csrf_token %}<button type="submit" class="btn btn-danger btn-icon btn-sm">✕</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+<!-- Materials GRID -->
+<div id="mat-view-grid" class="materials-grid" style="display:none;">
+  {% for m in materials %}
+  <div class="material-grid-card">
+    <div style="font-size:2rem;line-height:1;">{{ m.type_icon }}</div>
+    <div style="font-size:.87rem;font-weight:600;color:var(--bright);line-height:1.35;">{{ m.title }}</div>
+    <div style="font-size:.72rem;color:var(--muted);font-family:monospace;">{{ m.get_material_type_display }}</div>
+    <div style="font-size:.7rem;color:var(--muted);">order: {{ m.order }}</div>
+    {% if request.user.can_edit %}
+    <form method="post" action="{% url 'delete_material' course.id m.id %}" onsubmit="return confirm('Remove this material?')" style="margin-top:auto;padding-top:8px;width:100%;">
+      {% csrf_token %}<button type="submit" class="btn btn-danger btn-sm" style="width:100%;justify-content:center;">Remove</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty" style="padding:24px 0;"><div class="empty-ico" style="font-size:1.8rem;">📎</div><div>No materials yet.{% if request.user.can_edit %} Add the first one above.{% endif %}</div></div>
+{% endif %}
+
+<!-- ── Assignments ────────────────────────────────────────────────────────── -->
+<div style="margin-top:32px;font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+  <span>Assigned Users <span style="color:var(--teal);">({{ assignment_data|length }})</span></span>
+  {% if request.user.can_edit and all_users %}
+  <button class="btn btn-ghost btn-sm" onclick="document.getElementById('assign-modal').style.display='flex'">+ Assign Users</button>
+  {% endif %}
+</div>
+{% if assignment_data %}
+{% for row in assignment_data %}
+<div class="link-card" style="padding:12px 16px;margin-bottom:8px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <div style="flex:1;min-width:0;">
+      <div style="color:var(--bright);font-size:.9rem;">{{ row.assignment.user.name }}</div>
+      <div style="font-size:.75rem;color:var(--muted);">{{ row.assignment.user.email }} · assigned {{ row.assignment.assigned_at|date:"M d, Y" }}{% if row.assignment.due_date %} · due {{ row.assignment.due_date|date:"M d, Y" }}{% endif %}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;">
+      <div style="font-size:.82rem;font-family:monospace;color:{% if row.pct == 100 %}var(--green){% elif row.pct > 0 %}var(--teal){% else %}var(--muted){% endif %};">
+        {{ row.completed }}/{{ row.total }} ({{ row.pct }}%)
+      </div>
+      <div style="width:120px;height:4px;background:var(--ink3);border-radius:2px;margin-top:4px;overflow:hidden;">
+        <div style="height:100%;width:{{ row.pct }}%;background:{% if row.pct == 100 %}var(--green){% else %}var(--teal){% endif %};border-radius:2px;"></div>
+      </div>
+    </div>
+    {% if request.user.can_edit %}
+    <form method="post" action="{% url 'unassign_course' course.id row.assignment.id %}" onsubmit="return confirm('Remove this assignment?')" style="flex-shrink:0;">
+      {% csrf_token %}<button type="submit" class="btn btn-danger btn-icon btn-sm">✕</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="empty" style="padding:20px 0;"><div>No users assigned yet.{% if request.user.can_edit and all_users %} Click + Assign Users.{% endif %}</div></div>
+{% endif %}
+
+{% if request.user.can_edit %}
+<!-- Add Material Modal -->
+<div id="add-mat-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--ink2);border:1px solid var(--line2);border-radius:var(--r-xl);padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-family:'Clash Display',sans-serif;font-size:1.1rem;font-weight:600;color:var(--bright);">Add Material</div>
+      <button onclick="document.getElementById('add-mat-modal').style.display='none'" style="background:var(--ink3);border:1px solid var(--line);color:var(--muted);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <form method="post" action="{% url 'add_material' course.id %}" enctype="multipart/form-data">{% csrf_token %}
+      <div class="form-group"><label class="form-label">Title</label><input class="form-input" name="title" required placeholder="e.g. Introduction to Python"></div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" name="material_type" id="mat-type" onchange="toggleMatFields()">
+          <option value="video_file">🎬 Video File</option>
+          <option value="pdf">📄 PDF</option>
+          <option value="doc">📝 Document</option>
+          <option value="image">🖼 Image</option>
+          <option value="video_link">▶ Video Link (YouTube / URL)</option>
+        </select>
+      </div>
+      <div class="form-group" id="file-field">
+        <label class="form-label">File</label>
+        <input type="file" name="file" style="width:100%;padding:10px 12px;background:var(--ink3);border:1px solid var(--line2);border-radius:var(--r);color:var(--bright);font-size:.875rem;cursor:pointer;">
+      </div>
+      <div class="form-group" id="url-field" style="display:none;">
+        <label class="form-label">Video URL</label>
+        <input class="form-input" name="video_url" placeholder="https://youtube.com/watch?v=...">
+      </div>
+      <div class="form-group"><label class="form-label">Order <span style="opacity:.5;font-weight:400;">(lower = first)</span></label><input class="form-input" type="number" name="order" value="{{ materials|length }}" min="0"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('add-mat-modal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn btn-teal">Add</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Assign Modal -->
+{% if all_users %}
+<div id="assign-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--ink2);border:1px solid var(--line2);border-radius:var(--r-xl);padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-family:'Clash Display',sans-serif;font-size:1.1rem;font-weight:600;color:var(--bright);">Assign Course</div>
+      <button onclick="document.getElementById('assign-modal').style.display='none'" style="background:var(--ink3);border:1px solid var(--line);color:var(--muted);cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <form method="post" action="{% url 'assign_course' course.id %}">{% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Select Users</label>
+        <div style="max-height:220px;overflow-y:auto;background:var(--ink3);border:1px solid var(--line2);border-radius:var(--r);padding:8px;">
+          {% for u in all_users %}
+          <label style="display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:var(--r-sm);cursor:pointer;">
+            <input type="checkbox" name="user_ids" value="{{ u.id }}" style="accent-color:var(--teal);">
+            <span style="color:var(--bright);font-size:.875rem;">{{ u.name }}</span>
+            <span style="color:var(--muted);font-size:.75rem;margin-left:auto;">{{ u.role }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Due Date <span style="opacity:.5;font-weight:400;">(optional)</span></label><input class="form-input" type="date" name="due_date"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('assign-modal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn btn-teal">Assign</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script>
+function toggleMatFields() {
+  const t = document.getElementById('mat-type').value;
+  document.getElementById('file-field').style.display = t === 'video_link' ? 'none' : '';
+  document.getElementById('url-field').style.display  = t === 'video_link' ? '' : 'none';
+}
+function setMatView(v) {
+  localStorage.setItem('materials-view', v);
+  document.getElementById('mat-view-list').style.display = v === 'list' ? '' : 'none';
+  document.getElementById('mat-view-grid').style.display = v === 'grid' ? '' : 'none';
+  document.getElementById('mvbtn-list').classList.toggle('active', v === 'list');
+  document.getElementById('mvbtn-grid').classList.toggle('active', v === 'grid');
+}
+setMatView(localStorage.getItem('materials-view') || 'list');
+</script>
+{% endblock %}
