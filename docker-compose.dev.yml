@@ -4,6 +4,9 @@ services:
       - .:/app
     environment:
       - DEBUG=True
+      - DJANGO_SUPERUSER_USERNAME: admin
+      - DJANGO_SUPERUSER_PASSWORD: Asd@1234
+      - DJANGO_SUPERUSER_EMAIL: admin@example.com
     restart: "no"
     command: >
       sh -c "python manage.py migrate &&
